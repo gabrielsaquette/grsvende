@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790110344089,
+      "tag": "0000_nappy_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790169214245,
+      "tag": "0001_conscious_lord_tyger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790280412720,
+      "tag": "0002_mysterious_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790282693734,
+      "tag": "0003_tearful_machine_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790620890668,
+      "tag": "0004_secret_jack_flag",
+      "breakpoints": true
+    }
+  ]
+}
