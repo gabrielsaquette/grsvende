@@ -38,6 +38,7 @@ export async function getProdutos({
                 codigo: produtos.codigo,
                 nome: produtos.nome,
                 qtdEmbalagem: produtos.qtdEmbalagem,
+                cubagemM3: produtos.cubagemM3,
                 valorUnitario: produtos.valorUnitario,
                 pesoKg: produtos.pesoKg,
                 gtin: produtos.gtin,

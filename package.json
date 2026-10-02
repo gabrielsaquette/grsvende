@@ -9,6 +9,10 @@
     "lint": "eslint",
     "db:seed": "tsx src/db/seed.ts",
     "db:seed:produtos": "tsx src/db/seed-produtos.ts",
+    "db:seed:estados": "tsx src/db/seed-estados.ts",
+    "db:seed:tributos": "tsx src/db/seed-tributos.ts",
+    "db:seed:config-precificacao": "tsx src/db/seed-configuracoes-precificacao.ts",
+    "db:seed:regioes-frete": "tsx src/db/seed-regioes-frete.ts",
     "overrides": {
       "@types/react": "^19.0.0",
       "@types/react-dom": "^19.0.0"

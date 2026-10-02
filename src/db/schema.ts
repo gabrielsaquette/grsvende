@@ -5,6 +5,7 @@ import {
     varchar,
     text,
     numeric,
+    boolean,
     timestamp,
     index,
 } from "drizzle-orm/pg-core";
@@ -73,6 +74,7 @@ export const produtos = pgTable(
         codigo: integer("codigo").notNull().unique(),
         nome: varchar("nome", { length: 255 }).notNull(),
         qtdEmbalagem: integer("qtd_embalagem").notNull().default(1),
+        cubagemM3: numeric("cubagem_m3", { precision: 10, scale: 6 }).notNull().default("0"),
         valorUnitario: numeric("valor_unitario", { precision: 12, scale: 2 }).notNull().default("0"),
         pesoKg: numeric("peso_kg", { precision: 10, scale: 3 }).notNull().default("0"),
         gtin: varchar("gtin", { length: 14 }),
@@ -83,6 +85,32 @@ export const produtos = pgTable(
     },
     (table) => [index("produtos_nome_trgm_idx").using("gin", sql`${table.nome} gin_trgm_ops`)]
 );
+
+export const regioesFrete = pgTable("regioes_frete", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 40 }).notNull().unique(),
+  valorM3: numeric("valor_m3", { precision: 10, scale: 2 }).notNull().default("0"),
+});
+
+export const estados = pgTable("estados", {
+    uf: varchar("uf", { length: 2 }).primaryKey(),
+    nome: varchar("nome", { length: 30 }).notNull(),
+    mva: numeric("mva", { precision: 5, scale: 2 }).notNull().default("0"),
+});
+
+export const tributos = pgTable("tributos", {
+    id: serial("id").primaryKey(),
+    codigo: varchar("codigo", { length: 20 }).notNull().unique(),
+    nome: varchar("nome", { length: 60 }).notNull(),
+    aliquota: numeric("aliquota", { precision: 6, scale: 3 }).notNull().default("0"),
+    escalaPelaCondicao: boolean("escala_pela_condicao").notNull().default(true),
+});
+
+export const configuracoesPrecificacao = pgTable("configuracoes_precificacao", {
+    id: serial("id").primaryKey(),
+    mcPadrao: numeric("mc_padrao", { precision: 5, scale: 2 }).notNull().default("2.50"),
+    multiplicadorMc: numeric("multiplicador_mc", { precision: 5, scale: 2 }).notNull().default("4.80"),
+});
 
 export const usersRelations = relations(users, ({ many }) => ({
     clientes: many(clientes),

@@ -4,9 +4,16 @@ import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { getProdutos } from "@/lib/data/produtos";
-import { formatCurrency, formatNcm, formatWeight } from "@/lib/format";
+import { getEstados } from "@/lib/data/estados";
+import { getTributos } from "@/lib/data/tributos";
+import { getConfiguracoesPrecificacao } from "@/lib/data/configuracoes-precificacao";
+import { formatWeight, formatNcm } from "@/lib/format";
 import { ProdutoThumb } from "./produto-thumb";
 import { ProdutosSearch } from "./produtos-search";
+import { PriceCalculatorProvider } from "./price-calculator-context";
+import { PriceCalculatorPanel } from "./price-calculator-panel";
+import { PrecoFinalCell } from "./preco-final-cell";
+import { getRegioesFrete } from "@/lib/data/regioes-frete";
 
 const PAGE_SIZE = 25;
 
@@ -29,78 +36,67 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
     const q = (first(sp.q) ?? "").trim().slice(0, 100);
     const page = Math.max(1, Number.parseInt(first(sp.page) ?? "1", 10) || 1);
 
-    const { rows, total } = await getProdutos({ page, pageSize: PAGE_SIZE, q });
+    const [{ rows, total }, estadosList, regioesFreteList, tributosList, config] = await Promise.all([
+        getProdutos({ page, pageSize: PAGE_SIZE, q }),
+        getEstados(),
+        getRegioesFrete(),
+        getTributos(),
+        getConfiguracoesPrecificacao(),
+    ]);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
     if (page > totalPages) redirect(hrefFor(totalPages, q));
 
+    const tributosCalc = tributosList.map((t) => ({
+        codigo: t.codigo,
+        aliquota: Number(t.aliquota),
+        escalaPelaCondicao: t.escalaPelaCondicao,
+    }));
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-ink">Produtos</h1>
-                    <p className="text-sm text-ink-muted">
-                        {q ? `${total} resultado(s) para "${q}"` : `${total} no catálogo`}
-                    </p>
+        <PriceCalculatorProvider
+            estados={estadosList}
+            regioesFrete={regioesFreteList}
+            tributos={tributosCalc}
+            mcPadrao={Number(config.mcPadrao)}
+            multiplicadorMc={Number(config.multiplicadorMc)}
+        >
+            <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-lg font-semibold text-ink">Produtos</h1>
+                        <p className="text-sm text-ink-muted">{q ? `${total} resultado(s) para "${q}"` : `${total} no catálogo`}</p>
+                    </div>
+                    <ProdutosSearch initialQuery={q} />
                 </div>
-                <ProdutosSearch initialQuery={q} />
+
+                <PriceCalculatorPanel />
+
+                {rows.length === 0 ? (
+                    <EmptyState
+                        icon={Package}
+                        title={q ? "Nenhum produto encontrado" : "Nenhum produto no catálogo"}
+                        description={q ? "Tente buscar por outro nome, código ou GTIN." : "Os produtos importados aparecerão aqui."}
+                    />
+                ) : (
+                    <>
+                        <DataTable
+                            rows={rows}
+                            columns={[
+                                { header: "Imagem", className: "w-20", cell: (p) => <ProdutoThumb src={p.imagemUrl} alt={p.nome} /> },
+                                { header: "Código", cell: (p) => p.codigo, className: "font-mono text-ink" },
+                                { header: "Nome Produto", cell: (p) => p.nome, className: "text-ink" },
+                                { header: "Qtde. na Embal.", cell: (p) => p.qtdEmbalagem, className: "text-right font-mono text-ink" },
+                                { header: "Preço", cell: (p) => <PrecoFinalCell produto={p} /> },
+                                { header: "Peso (Kg)", cell: (p) => formatWeight(p.pesoKg), className: "text-right font-mono text-ink" },
+                                { header: "GTIN", cell: (p) => p.gtin ?? "—", className: "font-mono text-xs text-ink-muted" },
+                                { header: "NCM", cell: (p) => (p.ncm ? formatNcm(p.ncm) : "—"), className: "font-mono text-xs text-ink-muted" },
+                            ]}
+                        />
+                        <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} hrefFor={(p) => hrefFor(p, q)} />
+                    </>
+                )}
             </div>
-
-            {rows.length === 0 ? (
-                <EmptyState
-                    icon={Package}
-                    title={q ? "Nenhum produto encontrado" : "Nenhum produto no catálogo"}
-                    description={
-                        q
-                            ? "Tente buscar por outro nome, código ou GTIN."
-                            : "Os produtos importados aparecerão aqui."
-                    }
-                />
-            ) : (
-                <>
-                    <DataTable
-                        rows={rows}
-                        columns={[
-                            {
-                                header: "Imagem",
-                                className: "w-20",
-                                cell: (p) => <ProdutoThumb src={p.imagemUrl} alt={p.nome} />,
-                            },
-                            { header: "Código", cell: (p) => p.codigo, className: "font-mono text-ink" },
-                            { header: "Nome Produto", cell: (p) => p.nome, className: "text-ink" },
-                            {
-                                header: "Qtde. na Embal.",
-                                cell: (p) => p.qtdEmbalagem,
-                                className: "text-right font-mono text-ink",
-                            },
-                            {
-                                header: "Valor Unitário",
-                                cell: (p) => formatCurrency(p.valorUnitario),
-                                className: "text-right font-mono text-ink",
-                            },
-                            {
-                                header: "Peso (Kg)",
-                                cell: (p) => formatWeight(p.pesoKg),
-                                className: "text-right font-mono text-ink",
-                            },
-                            { header: "GTIN", cell: (p) => p.gtin ?? "—", className: "font-mono text-xs text-ink-muted" },
-                            {
-                                header: "NCM",
-                                cell: (p) => (p.ncm ? formatNcm(p.ncm) : "—"),
-                                className: "font-mono text-xs text-ink-muted",
-                            },
-                        ]}
-                    />
-
-                    <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        total={total}
-                        pageSize={PAGE_SIZE}
-                        hrefFor={(p) => hrefFor(p, q)}
-                    />
-                </>
-            )}
-        </div>
+        </PriceCalculatorProvider>
     );
 }
